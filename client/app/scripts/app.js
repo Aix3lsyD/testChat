@@ -43,7 +43,16 @@ angular
     $stateProvider
       .state('home', {
         url: '/',
-        templateUrl: 'views/home.html'
+        templateUrl: 'views/home.html',
+        resolve: {
+          requireNoAuth: function($state, Auth){
+            return Auth.$requireAuth().then(function(auth) {
+              $state.go('channels');
+            }, function(error){
+              return;
+            });
+          }
+        }
       })
       .state('login', {
         resolve: {
@@ -93,6 +102,30 @@ angular
         controller: "ProfileCtrl",
         controllerAs: "profile",
         templateUrl: 'views/profile.html'
+      })
+      .state('channels', {
+        url: '/channels',
+        resolve: {
+          channels: function(Channels){
+            return Channels.$loaded();
+          },
+          profile: function($state, Auth, Users){
+            return Auth.$requireAuth().then(function(auth) {
+              return Users.getProfile(auth.uid).$loaded().then(function (profile) {
+                if (profile.displayName) {
+                  return profile;
+                } else {
+                  $state.go('profile');
+                }
+              });
+            }, function(error){
+                $state.go('home');
+              });
+          }
+        },
+        controller: 'ChannelsCtrl',
+        controllerAs: 'channels',
+        templateUrl: 'views/channels.html'
       });
   })
   .constant('FirebaseUrl', 'https://shining-torch-6965.firebaseio.com/');
